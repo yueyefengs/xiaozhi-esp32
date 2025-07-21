@@ -454,4 +454,21 @@ choice I2S_TYPE_TAIJIPI_S3
         bool "I2S Type PDM"
 endchoice
 
+choice WIFI_PROVISIONING_METHOD
+    prompt "WiFi Provisioning Method"
+    default WIFI_PROVISIONING_AP
+    help
+        Choose the method for WiFi provisioning
+    config WIFI_PROVISIONING_AP
+        bool "WiFi AP Mode (Current)"
+    config WIFI_PROVISIONING_BLUETOOTH
+        bool "Bluetooth BLE"
+    config WIFI_PROVISIONING_DUAL
+        bool "Dual Mode (AP + Bluetooth)"
+endchoice
+
+config USE_BLUETOOTH_PROVISIONING
+    bool
+    default y if WIFI_PROVISIONING_BLUETOOTH || WIFI_PROVISIONING_DUAL
+
 endmenu
