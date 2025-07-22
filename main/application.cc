@@ -27,10 +27,6 @@
 #endif
 
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
-#if CONFI"bluetooth_provisioning.h"
-#endif
-
-#include G_USE_BLUETOOTH_PROVISIONING
 #include "bluetooth_provisioning.h"
 #endif
 
