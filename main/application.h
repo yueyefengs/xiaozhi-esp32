@@ -26,11 +26,7 @@
 
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
 #include "bluetooth_provisioning.h"
-#include "network/ssid_manager.h"
-#include "network/wifi_station.h"
-#endif
-
-
+#
 #define SCHEDULE_EVENT (1 << 0)
 #define SEND_AUDIO_EVENT (1 << 1)
 #define CHECK_NEW_VERSION_DONE_EVENT (1 << 2)

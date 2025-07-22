@@ -1,40 +1,18 @@
 #include "application.h"
-#include "board.h"
-#include "display.h"
-#include "system_info.h"
-#include "ml307_ssl_transport.h"
-#include "audio_codec.h"
-#include "mqtt_protocol.h"
-#include "websocket_protocol.h"
-#include "font_awesome_symbols.h"
-#include "iot/thing_manager.h"
-#include "assets/lang_config.h"
-#include "mcp_server.h"
-#include "audio_debugger.h"
-
-#if CONFIG_USE_AUDIO_PROCESSOR
-#include "afe_audio_processor.h"
-#else
-#include "no_audio_processor.h"
-#endif
-
-#if CONFIG_USE_AFE_WAKE_WORD
-#include "afe_wake_word.h"
-#elif CONFIG_USE_ESP_WAKE_WORD
-#include "esp_wake_word.h"
-#else
-#include "no_wake_word.h"
-#endif
-
-#if CONFIG_USE_BLUETOOTH_PROVISIONING
-#include "bluetooth_provisioning.h"
-#endif
-
 #include <cstring>
 #include <esp_log.h>
 #include <cJSON.h>
 #include <driver/gpio.h>
 #include <arpa/inet.h>
+#include <esp_wifi.h>
+#include <esp_err.h>
+#include <esp_wifi.h>
+#include <esp_err.h>
+
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+#include "bluetooth_provisioning.h"
+#include "wifi_configuration_ap.h"
+#endif
 
 #define TAG "Application"
 
@@ -1197,12 +1175,19 @@ void Application::EnterBluetoothConfigMode() {
 void Application::HandleWifiCredentials(const std::string& ssid, const std::string& password) {
     ESP_LOGI(TAG, "Attempting to connect to WiFi: %s", ssid.c_str());
     
-    auto& ssid_manager = SsidManager::GetInstance();
-    ssid_manager.AddSsid(ssid, password);
+    // 直接使用 WiFi 连接逻辑
+    esp_wifi_config_t wifi_config = {};
+    strncpy((char*)wifi_config.sta.ssid, ssid.c_str(), sizeof(wifi_config.sta.ssid) - 1);
+    strncpy((char*)wifi_config.sta.password, password.c_str(), sizeof(wifi_config.sta.password) - 1);
     
-    auto& wifi_station = WifiStation::GetInstance();
-    if (wifi_station.Connect(ssid, password)) {
-        ESP_LOGI(TAG, "WiFi connection successful");
+    esp_err_t ret = esp_wifi_set_config(WIFI_IF_STA, &wifi_config);
+    if (ret == ESP_OK) {
+        ret = esp_wifi_connect();
+    }
+    
+    if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "WiFi connection initiated successfully");
+        
         auto& bt_prov = BluetoothProvisioning::GetInstance();
         bt_prov.SendConnectionStatus(true);
         
@@ -1210,7 +1195,8 @@ void Application::HandleWifiCredentials(const std::string& ssid, const std::stri
         vTaskDelay(pdMS_TO_TICKS(3000));
         esp_restart();
     } else {
-        ESP_LOGE(TAG, "WiFi connection failed");
+        ESP_LOGE(TAG, "WiFi connection failed with error: %s", esp_err_to_name(ret));
+        
         auto& bt_prov = BluetoothProvisioning::GetInstance();
         bt_prov.SendConnectionStatus(false);
         
@@ -1218,48 +1204,6 @@ void Application::HandleWifiCredentials(const std::string& ssid, const std::stri
     }
 }
 #endif
-    auto& bt_prov = BluetoothProvisioning::GetInstance();
-    bt_prov.SetDeviceName("BuddyPal-" + GetDeviceId());
-    
-    bt_prov.OnCredentialsReceived([this](const std::string& ssid, const std::string& password) {
-        ESP_LOGI(TAG, "Received WiFi credentials via Bluetooth");
-        HandleWifiCredentials(ssid, password);
-    });
-    
-    bt_prov.Start();
-    
-    auto display = Board::GetInstance().GetDisplay();
-    display->SetStatus("蓝牙配网模式");
-    display->SetChatMessage("system", "请使用手机App连接设备进行配网");
-    
-    Alert("蓝牙配网", "请打开手机蓝牙并使用配网App", "neutral", "");
-}
-
-void Application::HandleWifiCredentials(const std::string& ssid, const std::string& password) {
-    ESP_LOGI(TAG, "Attempting to connect to WiFi: %s", ssid.c_str());
-    
-    auto& ssid_manager = SsidManager::GetInstance();
-    ssid_manager.AddSsid(ssid, password);
-    
-    auto& wifi_station = WifiStation::GetInstance();
-    if (wifi_station.Connect(ssid, password)) {
-        ESP_LOGI(TAG, "WiFi connection successful");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();
-        bt_prov.SendConnectionStatus(true);
-        
-        Alert("配网成功", "WiFi连接成功，设备即将重启", "happy", "");
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        esp_restart();
-    } else {
-        ESP_LOGE(TAG, "WiFi connection failed");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();
-        bt_prov.SendConnectionStatus(false);
-        
-        Alert("配网失败", "WiFi连接失败，请检查密码", "sad", "");
-    }
-}
-#endif
-
     auto& bt_prov = BluetoothProvisioning::GetInstance();
     bt_prov.SetDeviceName("BuddyPal-" + GetDeviceId());
     
