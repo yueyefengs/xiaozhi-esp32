@@ -6,8 +6,6 @@
 #include <arpa/inet.h>
 #include <esp_wifi.h>
 #include <esp_err.h>
-#include <esp_wifi.h>
-#include <esp_err.h>
 
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
 #include "bluetooth_provisioning.h"
