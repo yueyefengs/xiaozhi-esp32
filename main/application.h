@@ -24,6 +24,13 @@
 #include "wake_word.h"
 #include "audio_debugger.h"
 
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+#include "bluetooth_provisioning.h"
+#include "network/ssid_manager.h"
+#include "network/wifi_station.h"
+#endif
+
+
 #define SCHEDULE_EVENT (1 << 0)
 #define SEND_AUDIO_EVENT (1 << 1)
 #define CHECK_NEW_VERSION_DONE_EVENT (1 << 2)
@@ -80,6 +87,11 @@ public:
     bool CanEnterSleepMode();
     void SendMcpMessage(const std::string& payload);
     void SetAecMode(AecMode mode);
+    
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+    void EnterBluetoothConfigMode();
+    void HandleWifiCredentials(const std::string& ssid, const std::string& password);
+#endif
     bool ReadAudio(std::vector<int16_t>& data, int sample_rate, int samples);
     AecMode GetAecMode() const { return aec_mode_; }
     BackgroundTask* GetBackgroundTask() const { return background_task_; }
