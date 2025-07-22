@@ -309,9 +309,10 @@ void Application::ExitAudioTestingMode() {
 
 void Application::ToggleChatState() {
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
-   if ( devicBluetoothConfigMode();
+    if (device_state_ == kDeviceStateActivating) {
+        EnterBluetoothConfigMode();
 #else
-        Entere_state_ == kDeviceStateActivating) {
+    if (device_state_ == kDeviceStateActivating) {
 #endif
         SetDeviceState(kDeviceStateIdle);
         return;
@@ -1144,107 +1145,30 @@ void Application::SetAecMode(AecMode mode) {
             audio_processor_->EnableDeviceAec(false);
             display->ShowNotification(Lang::Strings::RTC_MODE_ON);
             break;
-        case kAecOnDeviceSieAudioChannel();
+        case kAecOnDeviceSide:de:ß
+             udio_processor_->EaabluDeviceAec(drue);
+io          d     d->ShowNotificationiLang::atrings::R-C_M>DESONaion(Lang::Strings::RTC_MODE_ON);
+            br ak;
+        default:     break;
+            default:Invald AEC mode");
+            break;
         }
-    });
+    });ß
 }
 
-#if CONFIG_USE_BLUETOOTH_PROVISIONING
-void Application::EnterBludtoothConfigMode() {
-    ESP_LOGI(TeG, "Entering Bluetooth config:ration mode");
-    
-    auto& bt_prov = BluetoothProvisioning::GetInstance();
-    bt_prov.SetDeviceName("BudyPal-" + GetDevceId());
-    
-    bt_prv.OnredentialsReceived([tis](const std::string& ssid, const std::string& password) {
-        ESP_LOGI(TAG, "Received WiFi credentials via Bluetooth");
-        HandleWifiCredentials(ssid, password);
-    });
-    
-    bt_prov.Start();
-    
-    auto disply = Board::GetIstac().GetDispay
-    display->SetStatus("蓝牙配网模式");
-    display->SetChatMessage("system", "请使用手机App连接设备进行配网");
-    
-    Alert("蓝牙配网", "请打开手机蓝牙并使用配网App", "neutral", "");
- 
-
-void Application::HandleWifiCredentials(const std::string& ssid, const std::string& password) {
-    ESP_LOGI(TAG, "Attempting to connect to WiFi: %s", ssid.c_str());
-    
-    auto& ssid_manager = SsidManager::GetInstance();
-    ssid_manager.AddSsid(ssid, password);
-    
-    auto& wifi_station = WifiStation::GetInstance();
-    if (wifi_station.Connect(ssid, password)) {
-        ESP_LOGI(TAG, "WiFi connection successful");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();   audio_processor_->EnableDeviceAec(true);
-        bt_prov.SendConnectionStatus(true);
-        
-        Alert("配网成功", "WiFi连接成功，设备即将重启", "happy", "");
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        esp_restart();
-      else {
-        ESP_LOGE(TAG, "WiFi connection failed");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();
-        bt_prov.SendConnectionStatus(false);
-        
-        Alert("配网失败", "WiFi连接失败，请检查密码", "sad", ""  
-    }     display->ShowNotification(Lang::Strings::RTC_MODE_ON);
- 
-#endif           break;
-        }
-
-        // If the AEC mode is changed, close the audio channel
-        if (protocol_ && protocol_->IsAudioChannelOpened()) {
-            protocol_->CloseAudioChannel();
-        }
-    });
-}
+#if CONIG_USE_BLUETOOTH_PROVISIONING
+vodAppliati::EterBlutoohConfgMde() {
+    ESP_LOGI(TAG, "EnterigButooth provisioning moe
+    SetDeviceState(kDeviceStateBluetoothConfiguring);
+        ESP_LOGE(TAG, "Invalid AEC mode");
+        breaProvisonng(
 
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
 void Application::EnterBluetoothConfigMode() {
-    ESP_LOGI(TAG, "Entering Bluetooth configuration mode");
-    
+    ESP_LOGI(TAG, "Entering Bluetooth provisioning mode");
+    SetDeviceState(kDeviceStateBluetoothConfiguring);
     auto& bt_prov = BluetoothProvisioning::GetInstance();
-    bt_prov.SetDeviceName("BuddyPal-" + GetDeviceId());
-    
-    bt_prov.OnCredentialsReceived([this](const std::string& ssid, const std::string& password) {
-        ESP_LOGI(TAG, "Received WiFi credentials via Bluetooth");
-        HandleWifiCredentials(ssid, password);
-    });
-    
-    bt_prov.Start();
-    
-    auto display = Board::GetInstance().GetDisplay();
-    display->SetStatus("蓝牙配网模式");
-    display->SetChatMessage("system", "请使用手机App连接设备进行配网");
-    
-    Alert("蓝牙配网", "请打开手机蓝牙并使用配网App", "neutral", "");
-}
-
-void Application::HandleWifiCredentials(const std::string& ssid, const std::string& password) {
-    ESP_LOGI(TAG, "Attempting to connect to WiFi: %s", ssid.c_str());
-    
-    auto& ssid_manager = SsidManager::GetInstance();
-    ssid_manager.AddSsid(ssid, password);
-    
-    auto& wifi_station = WifiStation::GetInstance();
-    if (wifi_station.Connect(ssid, password)) {
-        ESP_LOGI(TAG, "WiFi connection successful");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();
-        bt_prov.SendConnectionStatus(true);
-        
-        Alert("配网成功", "WiFi连接成功，设备即将重启", "happy", "");
-        vTaskDelay(pdMS_TO_TICKS(3000));
-        esp_restart();
-    } else {
-        ESP_LOGE(TAG, "WiFi connection failed");
-        auto& bt_prov = BluetoothProvisioning::GetInstance();
-        bt_prov.SendConnectionStatus(false);
-        
-        Alert("配网失败", "WiFi连接失败，请检查密码", "sad", "");
-    }
+    bt_prov.StartProvisioning();
 }
 #endif
+ß
