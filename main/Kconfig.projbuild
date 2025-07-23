@@ -471,4 +471,26 @@ config USE_BLUETOOTH_PROVISIONING
     bool
     default y if WIFI_PROVISIONING_BLUETOOTH || WIFI_PROVISIONING_DUAL
 
+config BLE_DEVICE_NAME
+    string "BLE Device Name"
+    depends on USE_BLUETOOTH_PROVISIONING
+    default "BuddyPal"
+    help
+        The device name that will be advertised via Bluetooth.
+
+config BLE_PROVISIONING_TIMEOUT
+    int "BLE Provisioning Timeout (seconds)"
+    depends on USE_BLUETOOTH_PROVISIONING  
+    default 300
+    range 60 3600
+    help
+        How long the device will advertise for provisioning before giving up.
+
+config BLE_DEBUG_ENABLED
+    bool "Enable BLE Debug Messages"
+    depends on USE_BLUETOOTH_PROVISIONING
+    default y
+    help
+        Send debug messages to the mobile app through BLE notifications.
+
 endmenu

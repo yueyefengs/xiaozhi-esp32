@@ -41,6 +41,7 @@ enum DeviceState {
     kDeviceStateUnknown,
     kDeviceStateStarting,
     kDeviceStateWifiConfiguring,
+    kDeviceStateBluetoothConfiguring,
     kDeviceStateIdle,
     kDeviceStateConnecting,
     kDeviceStateListening,
@@ -83,7 +84,8 @@ public:
     bool CanEnterSleepMode();
     void SendMcpMessage(const std::string& payload);
     void SetAecMode(AecMode mode);
-    
+    std::string GetDeviceId() const;
+
 #if CONFIG_USE_BLUETOOTH_PROVISIONING
     void EnterBluetoothConfigMode();
     void HandleWifiCredentials(const std::string& ssid, const std::string& password);

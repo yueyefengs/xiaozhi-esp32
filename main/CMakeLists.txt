@@ -264,9 +264,17 @@ if(CONFIG_IDF_TARGET_ESP32)
                              )
 endif()
 
+set(COMPONENT_REQUIRES "")
+
+# 条件性添加蓝牙依赖
+if(CONFIG_USE_BLUETOOTH_PROVISIONING)
+    list(APPEND COMPONENT_REQUIRES "bt")
+endif()
+
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}
                     INCLUDE_DIRS ${INCLUDE_DIRS}
+                    REQUIRES ${COMPONENT_REQUIRES}
                     WHOLE_ARCHIVE
                     )
 

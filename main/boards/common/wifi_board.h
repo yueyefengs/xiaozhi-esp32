@@ -7,6 +7,7 @@ class WifiBoard : public Board {
 protected:
     bool wifi_config_mode_ = false;
     void EnterWifiConfigMode();
+    void ConnectToWifi(const std::string& ssid, const std::string& password);
     virtual std::string GetBoardJson() override;
 
 public:

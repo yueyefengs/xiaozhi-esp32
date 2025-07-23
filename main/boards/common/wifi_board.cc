@@ -1,4 +1,15 @@
 #include "wifi_board.h"
+#include <esp_log.h>
+#include <esp_wifi.h>
+#include <esp_system.h>
+#include <string>
+#include <cJSON.h>
+
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+#include "network/bluetooth_provisioning.h"
+#endif
+
+#include "wifi_configuration_ap.h"
 
 #include "display.h"
 #include "application.h"
@@ -41,6 +52,45 @@ void WifiBoard::EnterWifiConfigMode() {
     auto& application = Application::GetInstance();
     application.SetDeviceState(kDeviceStateWifiConfiguring);
 
+#if CONFIG_USE_BLUETOOTH_PROVISIONING && (CONFIG_WIFI_PROVISIONING_BLUETOOTH || CONFIG_WIFI_PROVISIONING_DUAL)
+    // 启动蓝牙配网
+    ESP_LOGI(TAG, "Starting Bluetooth provisioning");
+    auto& ble_prov = BluetoothProvisioning::GetInstance();
+    
+    // 设置设备名称
+#ifdef CONFIG_BLE_DEVICE_NAME
+    ble_prov.SetDeviceName(CONFIG_BLE_DEVICE_NAME);
+#endif
+    
+    // 设置凭据接收回调
+    ble_prov.OnCredentialsReceived([this](const std::string& ssid, const std::string& password) {
+        ESP_LOGI(TAG, "Received WiFi credentials via BLE: %s", ssid.c_str());
+        this->ConnectToWifi(ssid, password);
+    });
+    
+    // 设置设备连接状态回调
+    ble_prov.OnDeviceConnected([](bool connected) {
+        auto display = Board::GetInstance().GetDisplay();
+        if (connected) {
+            ESP_LOGI(TAG, "BLE device connected");
+            display->ShowNotification("BLE设备已连接", 5000);
+        } else {
+            ESP_LOGI(TAG, "BLE device disconnected");
+        }
+    });
+    
+    // 启动蓝牙配网
+    ble_prov.Start();
+    
+    // 显示蓝牙配网提示
+    std::string ble_hint = "蓝牙配网已启动\n设备名: ";
+    ble_hint += ble_prov.GetDeviceName();
+    ble_hint += "\n请使用手机App连接";
+    application.Alert("蓝牙配网模式", ble_hint.c_str(), "", "");
+#endif
+
+#if CONFIG_WIFI_PROVISIONING_AP || CONFIG_WIFI_PROVISIONING_DUAL
+    // 启动AP配网（原有方式）
     auto& wifi_ap = WifiConfigurationAp::GetInstance();
     wifi_ap.SetLanguage(Lang::CODE);
     wifi_ap.SetSsidPrefix("BuddyPal");
@@ -55,6 +105,7 @@ void WifiBoard::EnterWifiConfigMode() {
     
     // 播报配置 WiFi 的提示
     application.Alert(Lang::Strings::WIFI_CONFIG_MODE, hint.c_str(), "", Lang::Sounds::P3_WIFICONFIG);
+#endif
 
     #if USE_ACOUSTIC_WIFI_PROVISIONING
     audio_wifi_config::ReceiveWifiCredentialsFromAudio(&application, &wifi_ap);
@@ -67,6 +118,64 @@ void WifiBoard::EnterWifiConfigMode() {
         ESP_LOGI(TAG, "Free internal: %u minimal internal: %u", free_sram, min_free_sram);
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
+}
+
+void WifiBoard::ConnectToWifi(const std::string& ssid, const std::string& password) {
+    ESP_LOGI(TAG, "Attempting to connect to WiFi: %s", ssid.c_str());
+    
+    // 发送BLE调试信息
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+    auto& ble_prov = BluetoothProvisioning::GetInstance();
+    if (ble_prov.IsConnected()) {
+        ble_prov.SendDebugMessage("正在连接WiFi: " + ssid);
+    }
+#endif
+    
+    // 保存WiFi配置
+    auto& ssid_manager = SsidManager::GetInstance();
+    ssid_manager.AddSsid(ssid, password);
+    
+    // 尝试连接
+    auto& wifi_station = WifiStation::GetInstance();
+    
+    // 设置连接回调
+    wifi_station.OnConnected([this, ssid](const std::string& connected_ssid) {
+        ESP_LOGI(TAG, "WiFi connected successfully: %s", connected_ssid.c_str());
+        
+        // 发送成功状态
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+        auto& ble_prov = BluetoothProvisioning::GetInstance();
+        if (ble_prov.IsConnected()) {
+            ble_prov.SendConnectionStatus(true);
+            ble_prov.SendDebugMessage("WiFi连接成功!");
+            
+            // 延迟一秒后停止蓝牙配网
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            ble_prov.Stop();
+        }
+#endif
+        
+        // 重启设备以正常模式启动
+        ESP_LOGI(TAG, "Restarting device in normal mode...");
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        esp_restart();
+    });
+    
+    wifi_station.OnConnect([this, ssid](const std::string& connected_ssid) {
+        ESP_LOGE(TAG, "WiFi connection failed: %s", connected_ssid.c_str());
+        
+        // 发送失败状态
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+        auto& ble_prov = BluetoothProvisioning::GetInstance();
+        if (ble_prov.IsConnected()) {
+            ble_prov.SendConnectionStatus(false);
+            ble_prov.SendDebugMessage("WiFi连接失败，请检查密码");
+        }
+#endif
+    });
+    
+    // 开始连接
+    wifi_station.AddAuth(std::move(ssid), std::move(password));
 }
 
 void WifiBoard::StartNetwork() {
