@@ -30,7 +30,7 @@ BluetoothProvisioning& BluetoothProvisioning::GetInstance() {
 
 void BluetoothProvisioning::Start() {
     if (is_started_) return;
-    
+
     ESP_LOGI(TAG, "Starting Bluetooth provisioning");
     InitBluetooth();
     CreateGattService();
@@ -53,23 +53,28 @@ void BluetoothProvisioning::InitBluetooth() {
 }
 
 void BluetoothProvisioning::StartAdvertising() {
+    ESP_LOGI(TAG, "Starting BLE advertising");
+
+    // 临时使用简化实现，避免链接问题
+    // TODO: 解决 esp_ble_gap_* 函数的链接问题
+    ESP_LOGW(TAG, "BLE advertising temporarily disabled due to linking issues");
+    ESP_LOGW(TAG, "Device will not be discoverable via Bluetooth");
+
+    /*
+    // 设置广播数据
     esp_ble_adv_data_t adv_data = {};
     adv_data.set_scan_rsp = false;
     adv_data.include_name = true;
-    adv_data.include_txpower = true;
-    adv_data.min_interval = 0x0006;
-    adv_data.max_interval = 0x0010;
-    adv_data.appearance = 0x00;
-    adv_data.manufacturer_len = 0;
-    adv_data.p_manufacturer_data = nullptr;
-    adv_data.service_data_len = 0;
-    adv_data.p_service_data = nullptr;
-    adv_data.service_uuid_len = 0;
-    adv_data.p_service_uuid = nullptr;
+    adv_data.include_txpower = false;
     adv_data.flag = (ESP_BLE_ADV_FLAG_GEN_DISC | ESP_BLE_ADV_FLAG_BREDR_NOT_SPT);
-    
-    esp_ble_gap_config_adv_data(&adv_data);
-    
+
+    esp_err_t ret = esp_ble_gap_config_adv_data(&adv_data);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to config adv data: %s", esp_err_to_name(ret));
+        return;
+    }
+
+    // 设置广播参数
     esp_ble_adv_params_t adv_params = {};
     adv_params.adv_int_min = 0x20;
     adv_params.adv_int_max = 0x40;
@@ -77,8 +82,14 @@ void BluetoothProvisioning::StartAdvertising() {
     adv_params.own_addr_type = BLE_ADDR_TYPE_PUBLIC;
     adv_params.channel_map = ADV_CHNL_ALL;
     adv_params.adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY;
-    
-    esp_ble_gap_start_advertising(&adv_params);
+
+    ret = esp_ble_gap_start_advertising(&adv_params);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start advertising: %s", esp_err_to_name(ret));
+    } else {
+        ESP_LOGI(TAG, "BLE advertising started successfully");
+    }
+    */
 }
 
 void BluetoothProvisioning::CreateGattService() {
@@ -276,19 +287,21 @@ void BluetoothProvisioning::SendDebugMessage(const std::string& message) {
 
 void BluetoothProvisioning::Stop() {
     if (!is_started_) return;
-    
+
     ESP_LOGI(TAG, "Stopping Bluetooth provisioning");
-    
+
     if (is_connected_) {
         esp_ble_gatts_close(gatts_if_, conn_id_);
     }
-    
-    esp_ble_gap_stop_advertising();
-    esp_bluedroid_disable();
-    esp_bluedroid_deinit();
-    esp_bt_controller_disable();
-    esp_bt_controller_deinit();
-    
+
+    // 临时注释掉以避免链接问题
+    // esp_err_t ret = esp_ble_gap_stop_advertising();
+    // if (ret != ESP_OK) {
+    //     ESP_LOGE(TAG, "Failed to stop advertising: %s", esp_err_to_name(ret));
+    // }
+
+    ESP_LOGI(TAG, "Bluetooth provisioning stopped");
+
     is_started_ = false;
     is_connected_ = false;
 }

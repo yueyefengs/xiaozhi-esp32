@@ -7,6 +7,7 @@
 
 #include <string>
 #include <functional>
+#include "esp_bt.h"
 #include "esp_gap_ble_api.h"
 #include "esp_gatts_api.h"
 
