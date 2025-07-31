@@ -100,21 +100,39 @@ bool WebsocketProtocol::OpenAudioChannel() {
 
     error_occurred_ = false;
 
+    // ===== 开始WebSocket连接监控日志 =====
+    ESP_LOGI(TAG, "==================== WEBSOCKET CONNECTION DEBUG ====================");
+    ESP_LOGI(TAG, "WebSocket URL: %s", url.c_str());
+    ESP_LOGI(TAG, "Protocol Version: %d", version_);
+    ESP_LOGI(TAG, "Token present: %s", token.empty() ? "NO" : "YES");
+    if (!token.empty()) {
+        // 只显示token的前10个字符，保护隐私
+        std::string masked_token = token.substr(0, std::min(size_t(10), token.size())) + "...";
+        ESP_LOGI(TAG, "Token preview: %s", masked_token.c_str());
+    }
+
     websocket_ = Board::GetInstance().CreateWebSocket();
     
+    // 打印WebSocket请求头
+    ESP_LOGI(TAG, "WebSocket Headers:");
     if (!token.empty()) {
         // If token not has a space, add "Bearer " prefix
         if (token.find(" ") == std::string::npos) {
             token = "Bearer " + token;
         }
         websocket_->SetHeader("Authorization", token.c_str());
+        ESP_LOGI(TAG, "  Authorization: %s", token.substr(0, std::min(size_t(20), token.size())).c_str());
     }
     websocket_->SetHeader("Protocol-Version", std::to_string(version_).c_str());
+    ESP_LOGI(TAG, "  Protocol-Version: %d", version_);
     websocket_->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
+    ESP_LOGI(TAG, "  Device-Id: %s", SystemInfo::GetMacAddress().c_str());
     websocket_->SetHeader("Client-Id", Board::GetInstance().GetUuid().c_str());
+    ESP_LOGI(TAG, "  Client-Id: %s", Board::GetInstance().GetUuid().c_str());
 
     websocket_->OnData([this](const char* data, size_t len, bool binary) {
         if (binary) {
+            ESP_LOGD(TAG, "Received binary data: %d bytes", len);
             if (on_incoming_audio_ != nullptr) {
                 if (version_ == 2) {
                     BinaryProtocol2* bp2 = (BinaryProtocol2*)data;
@@ -150,10 +168,12 @@ bool WebsocketProtocol::OpenAudioChannel() {
                 }
             }
         } else {
+            ESP_LOGI(TAG, "Received JSON message: %.*s", len, data);
             // Parse JSON data
             auto root = cJSON_Parse(data);
             auto type = cJSON_GetObjectItem(root, "type");
             if (cJSON_IsString(type)) {
+                ESP_LOGI(TAG, "Message type: %s", type->valuestring);
                 if (strcmp(type->valuestring, "hello") == 0) {
                     ParseServerHello(root);
                 } else {
@@ -162,7 +182,7 @@ bool WebsocketProtocol::OpenAudioChannel() {
                     }
                 }
             } else {
-                ESP_LOGE(TAG, "Missing message type, data: %s", data);
+                ESP_LOGE(TAG, "Missing message type, data: %.*s", len, data);
             }
             cJSON_Delete(root);
         }
@@ -171,31 +191,43 @@ bool WebsocketProtocol::OpenAudioChannel() {
 
     websocket_->OnDisconnected([this]() {
         ESP_LOGI(TAG, "Websocket disconnected");
+        ESP_LOGI(TAG, "==================== WEBSOCKET DISCONNECTED ====================");
         if (on_audio_channel_closed_ != nullptr) {
             on_audio_channel_closed_();
         }
     });
 
-    ESP_LOGI(TAG, "Connecting to websocket server: %s with version: %d", url.c_str(), version_);
+    ESP_LOGI(TAG, "Attempting to connect to websocket server...");
     if (!websocket_->Connect(url.c_str())) {
         ESP_LOGE(TAG, "Failed to connect to websocket server");
+        ESP_LOGE(TAG, "==================== WEBSOCKET CONNECTION FAILED ====================");
         SetError(Lang::Strings::SERVER_NOT_CONNECTED);
         return false;
     }
 
+    ESP_LOGI(TAG, "WebSocket connection established successfully");
+
     // Send hello message to describe the client
     auto message = GetHelloMessage();
+    ESP_LOGI(TAG, "Sending hello message: %s", message.c_str());
     if (!SendText(message)) {
+        ESP_LOGE(TAG, "Failed to send hello message");
+        ESP_LOGE(TAG, "==================== WEBSOCKET HELLO FAILED ====================");
         return false;
     }
 
+    ESP_LOGI(TAG, "Waiting for server hello response...");
     // Wait for server hello
     EventBits_t bits = xEventGroupWaitBits(event_group_handle_, WEBSOCKET_PROTOCOL_SERVER_HELLO_EVENT, pdTRUE, pdFALSE, pdMS_TO_TICKS(10000));
     if (!(bits & WEBSOCKET_PROTOCOL_SERVER_HELLO_EVENT)) {
-        ESP_LOGE(TAG, "Failed to receive server hello");
+        ESP_LOGE(TAG, "Failed to receive server hello within 10 seconds");
+        ESP_LOGE(TAG, "==================== WEBSOCKET HELLO TIMEOUT ====================");
         SetError(Lang::Strings::SERVER_TIMEOUT);
         return false;
     }
+
+    ESP_LOGI(TAG, "Server hello received successfully");
+    ESP_LOGI(TAG, "==================== WEBSOCKET CONNECTION SUCCESS ====================");
 
     if (on_audio_channel_opened_ != nullptr) {
         on_audio_channel_opened_();
