@@ -56,7 +56,7 @@ Http* Ota::SetupHttp() {
     auto http = board.CreateHttp();
     http->SetHeader("Activation-Version", has_serial_number_ ? "2" : "1");
     http->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
-    http->SetHeader("Client-Id", board.GetUuid());
+    http->SetHeader("Client-Id", board.GetUuid().c_str());
     if (has_serial_number_) {
         http->SetHeader("Serial-Number", serial_number_.c_str());
     }
@@ -99,7 +99,7 @@ bool Ota::CheckVersion() {
     // 打印请求头信息（通过SetupHttp设置的）
     ESP_LOGI(TAG, "Request Headers:");
     ESP_LOGI(TAG, "  Device-Id: %s", SystemInfo::GetMacAddress().c_str());
-    ESP_LOGI(TAG, "  Client-Id: %s", board.GetUuid());
+    ESP_LOGI(TAG, "  Client-Id: %s", board.GetUuid().c_str());
     ESP_LOGI(TAG, "  User-Agent: %s/%s", BOARD_NAME, app_desc->version);
     ESP_LOGI(TAG, "  Accept-Language: %s", Lang::CODE);
     ESP_LOGI(TAG, "  Content-Type: application/json");
