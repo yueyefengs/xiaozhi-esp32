@@ -606,13 +606,7 @@ void Application::Start() {
     audio_debugger_ = std::make_unique<AudioDebugger>();
     audio_processor_->Initialize(codec);
     audio_processor_->OnOutput([this](std::vector<int16_t>&& data) {
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            if (audio_send_queue_.size() >= MAX_AUDIO_PACKETS_IN_QUEUE) {
-                ESP_LOGW(TAG, "Too many audio packets in queue, drop the newest packet");
-                return;
-            }
-        }
+        // 移除这里的检查，让后面的逻辑统一处理队列溢出
         background_task_->Schedule([this, data = std::move(data)]() mutable {
             opus_encoder_->Encode(std::move(data), [this](std::vector<uint8_t>&& opus) {
                 AudioStreamPacket packet;
@@ -635,8 +629,13 @@ void Application::Start() {
 #endif
                 std::lock_guard<std::mutex> lock(mutex_);
                 if (audio_send_queue_.size() >= MAX_AUDIO_PACKETS_IN_QUEUE) {
-                    ESP_LOGW(TAG, "Too many audio packets in queue, drop the oldest packet");
+                    ESP_LOGW(TAG, "Audio send queue full (%zu/%d), dropping oldest packet",
+                             audio_send_queue_.size(), MAX_AUDIO_PACKETS_IN_QUEUE);
                     audio_send_queue_.pop_front();
+                } else if (audio_send_queue_.size() > MAX_AUDIO_PACKETS_IN_QUEUE * 0.8) {
+                    // 当队列使用率超过80%时给出警告
+                    ESP_LOGD(TAG, "Audio send queue high usage: %zu/%d packets",
+                             audio_send_queue_.size(), MAX_AUDIO_PACKETS_IN_QUEUE);
                 }
                 audio_send_queue_.emplace_back(std::move(packet));
                 xEventGroupSetBits(event_group_, SEND_AUDIO_EVENT);
