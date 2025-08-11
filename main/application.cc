@@ -382,6 +382,12 @@ void Application::Start() {
     });
     protocol_->OnIncomingAudio([this](std::unique_ptr<AudioStreamPacket> packet) {
         if (device_state_ == kDeviceStateSpeaking) {
+            // 立即启用音频输出以减少延迟
+            auto codec = Board::GetInstance().GetAudioCodec();
+            if (!codec->output_enabled()) {
+                codec->EnableOutput(true);
+                ESP_LOGI(TAG, "First audio packet received, enabling output");
+            }
             audio_service_.PushPacketToDecodeQueue(std::move(packet));
         }
     });

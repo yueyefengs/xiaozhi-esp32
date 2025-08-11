@@ -110,7 +110,7 @@ void AudioService::Start() {
         AudioService* audio_service = (AudioService*)arg;
         audio_service->AudioOutputTask();
         vTaskDelete(NULL);
-    }, "audio_output", 2048 * 2, this, 3, &audio_output_task_handle_);
+    }, "audio_output", 2048 * 2, this, 12, &audio_output_task_handle_);  // 提高优先级到12
 #else
     /* Start the audio input task */
     xTaskCreate([](void* arg) {
@@ -124,7 +124,7 @@ void AudioService::Start() {
         AudioService* audio_service = (AudioService*)arg;
         audio_service->AudioOutputTask();
         vTaskDelete(NULL);
-    }, "audio_output", 2048, this, 3, &audio_output_task_handle_);
+    }, "audio_output", 2048, this, 12, &audio_output_task_handle_);  // 提高优先级到12
 #endif
 
     /* Start the opus codec task */
@@ -132,7 +132,7 @@ void AudioService::Start() {
         AudioService* audio_service = (AudioService*)arg;
         audio_service->OpusCodecTask();
         vTaskDelete(NULL);
-    }, "opus_codec", 2048 * 13, this, 2, &opus_codec_task_handle_);
+    }, "opus_codec", 2048 * 13, this, 10, &opus_codec_task_handle_);  // 提高优先级到10
 }
 
 void AudioService::Stop() {
@@ -344,6 +344,11 @@ void AudioService::OpusCodecTask() {
                 lock.lock();
                 audio_playback_queue_.push_back(std::move(task));
                 audio_queue_cv_.notify_all();
+
+                // 记录播放队列状态
+                if (audio_playback_queue_.size() >= MAX_PLAYBACK_TASKS_IN_QUEUE - 1) {
+                    ESP_LOGW(TAG, "Playback queue nearly full: %zu/%d", audio_playback_queue_.size(), MAX_PLAYBACK_TASKS_IN_QUEUE);
+                }
             } else {
                 ESP_LOGE(TAG, "Failed to decode audio");
                 lock.lock();
@@ -429,13 +434,20 @@ bool AudioService::PushPacketToDecodeQueue(std::unique_ptr<AudioStreamPacket> pa
     std::unique_lock<std::mutex> lock(audio_queue_mutex_);
     if (audio_decode_queue_.size() >= MAX_DECODE_PACKETS_IN_QUEUE) {
         if (wait) {
+            ESP_LOGW(TAG, "Decode queue full (%zu), waiting...", audio_decode_queue_.size());
             audio_queue_cv_.wait(lock, [this]() { return audio_decode_queue_.size() < MAX_DECODE_PACKETS_IN_QUEUE; });
         } else {
+            ESP_LOGW(TAG, "Decode queue full (%zu), dropping packet", audio_decode_queue_.size());
             return false;
         }
     }
     audio_decode_queue_.push_back(std::move(packet));
     audio_queue_cv_.notify_all();
+
+    // 记录队列状态用于调试
+    if (audio_decode_queue_.size() == 1) {
+        ESP_LOGI(TAG, "First packet in decode queue, playback queue size: %zu", audio_playback_queue_.size());
+    }
     return true;
 }
 
