@@ -25,7 +25,21 @@ set(SOURCES "audio_codecs/audio_codec.cc"
             "main.cc"
             )
 
-set(INCLUDE_DIRS "." "display" "audio_codecs" "protocols" "audio_processing")
+set(INCLUDE_DIRS "." 
+                 "display" 
+                 "audio_codecs" 
+                 "protocols" 
+                 "audio_processing" 
+                 "network"
+                 "led"
+                 "iot"
+                 "boards"
+                 "assets")
+
+# 条件性添加蓝牙配网源文件
+if(CONFIG_USE_BLUETOOTH_PROVISIONING)
+    list(APPEND SOURCES "network/bluetooth_provisioning.cc")
+endif()
 
 # 添加 IOT 相关文件
 file(GLOB IOT_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/iot/things/*.cc)
@@ -250,9 +264,28 @@ if(CONFIG_IDF_TARGET_ESP32)
                              )
 endif()
 
+set(COMPONENT_REQUIRES "")
+
+# 添加基础组件依赖
+list(APPEND COMPONENT_REQUIRES "spi_flash" "esp_wifi" "nvs_flash" "esp_netif" "esp_app_format" "app_update" "wifi_provisioning")
+
+# 条件性添加蓝牙依赖
+if(CONFIG_USE_BLUETOOTH_PROVISIONING)
+    list(APPEND COMPONENT_REQUIRES "bt")
+    list(APPEND COMPONENT_PRIV_REQUIRES "esp_common")
+endif()
+
+# 确保蓝牙组件被包含（临时调试）
+list(APPEND COMPONENT_REQUIRES "bt")
+
+# 添加蓝牙相关的私有依赖
+list(APPEND COMPONENT_PRIV_REQUIRES "esp_common")
+
 idf_component_register(SRCS ${SOURCES}
                     EMBED_FILES ${LANG_SOUNDS} ${COMMON_SOUNDS}
                     INCLUDE_DIRS ${INCLUDE_DIRS}
+                    REQUIRES ${COMPONENT_REQUIRES}
+                    PRIV_REQUIRES esp_system efuse ${COMPONENT_PRIV_REQUIRES}
                     WHOLE_ARCHIVE
                     )
 

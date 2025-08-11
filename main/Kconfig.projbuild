@@ -454,4 +454,43 @@ choice I2S_TYPE_TAIJIPI_S3
         bool "I2S Type PDM"
 endchoice
 
+choice WIFI_PROVISIONING_METHOD
+    prompt "WiFi Provisioning Method"
+    default WIFI_PROVISIONING_AP
+    help
+        Choose the method for WiFi provisioning
+    config WIFI_PROVISIONING_AP
+        bool "WiFi AP Mode (Current)"
+    config WIFI_PROVISIONING_BLUETOOTH
+        bool "Bluetooth BLE"
+    config WIFI_PROVISIONING_DUAL
+        bool "Dual Mode (AP + Bluetooth)"
+endchoice
+
+config USE_BLUETOOTH_PROVISIONING
+    bool
+    default y if WIFI_PROVISIONING_BLUETOOTH || WIFI_PROVISIONING_DUAL
+
+config BLE_DEVICE_NAME
+    string "BLE Device Name"
+    depends on USE_BLUETOOTH_PROVISIONING
+    default "BuddyPal"
+    help
+        The device name that will be advertised via Bluetooth.
+
+config BLE_PROVISIONING_TIMEOUT
+    int "BLE Provisioning Timeout (seconds)"
+    depends on USE_BLUETOOTH_PROVISIONING  
+    default 300
+    range 60 3600
+    help
+        How long the device will advertise for provisioning before giving up.
+
+config BLE_DEBUG_ENABLED
+    bool "Enable BLE Debug Messages"
+    depends on USE_BLUETOOTH_PROVISIONING
+    default y
+    help
+        Send debug messages to the mobile app through BLE notifications.
+
 endmenu

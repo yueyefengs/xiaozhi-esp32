@@ -24,6 +24,9 @@
 #include "wake_word.h"
 #include "audio_debugger.h"
 
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+#include "bluetooth_provisioning.h"
+#endif
 #define SCHEDULE_EVENT (1 << 0)
 #define SEND_AUDIO_EVENT (1 << 1)
 #define CHECK_NEW_VERSION_DONE_EVENT (1 << 2)
@@ -38,6 +41,7 @@ enum DeviceState {
     kDeviceStateUnknown,
     kDeviceStateStarting,
     kDeviceStateWifiConfiguring,
+    kDeviceStateBluetoothConfiguring,
     kDeviceStateIdle,
     kDeviceStateConnecting,
     kDeviceStateListening,
@@ -49,7 +53,7 @@ enum DeviceState {
 };
 
 #define OPUS_FRAME_DURATION_MS 60
-#define MAX_AUDIO_PACKETS_IN_QUEUE (2400 / OPUS_FRAME_DURATION_MS)
+#define MAX_AUDIO_PACKETS_IN_QUEUE (4800 / OPUS_FRAME_DURATION_MS)  // 增加到80个包，约4.8秒缓冲
 #define AUDIO_TESTING_MAX_DURATION_MS 10000
 
 class Application {
@@ -80,6 +84,12 @@ public:
     bool CanEnterSleepMode();
     void SendMcpMessage(const std::string& payload);
     void SetAecMode(AecMode mode);
+    std::string GetDeviceId() const;
+
+#if CONFIG_USE_BLUETOOTH_PROVISIONING
+    void EnterBluetoothConfigMode();
+    void HandleWifiCredentials(const std::string& ssid, const std::string& password);
+#endif
     bool ReadAudio(std::vector<int16_t>& data, int sample_rate, int samples);
     AecMode GetAecMode() const { return aec_mode_; }
     BackgroundTask* GetBackgroundTask() const { return background_task_; }
