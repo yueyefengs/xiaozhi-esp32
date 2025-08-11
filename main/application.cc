@@ -435,13 +435,13 @@ void Application::Start() {
         Application* app = (Application*)arg;
         app->AudioLoop();
         vTaskDelete(NULL);
-    }, "audio_loop", 4096 * 2, this, 8, &audio_loop_task_handle_, 1);
+    }, "audio_loop", 4096 * 2, this, 12, &audio_loop_task_handle_, 1);  // 提高优先级到12
 #else
     xTaskCreate([](void* arg) {
         Application* app = (Application*)arg;
         app->AudioLoop();
         vTaskDelete(NULL);
-    }, "audio_loop", 4096 * 2, this, 8, &audio_loop_task_handle_);
+    }, "audio_loop", 4096 * 2, this, 12, &audio_loop_task_handle_);  // 提高优先级到12
 #endif
 
     /* Start the clock timer to update the status bar */
@@ -482,6 +482,13 @@ void Application::Start() {
         std::lock_guard<std::mutex> lock(mutex_);
         if (device_state_ == kDeviceStateSpeaking && audio_decode_queue_.size() < MAX_AUDIO_PACKETS_IN_QUEUE) {
             audio_decode_queue_.emplace_back(std::move(packet));
+
+            // 如果这是第一个音频包，立即启用输出以减少延迟
+            if (audio_decode_queue_.size() == 1) {
+                auto codec = Board::GetInstance().GetAudioCodec();
+                codec->EnableOutput(true);
+                ESP_LOGI(TAG, "First audio packet received, enabling output");
+            }
         }
     });
     protocol_->OnAudioChannelOpened([this, codec, &board]() {
@@ -796,18 +803,34 @@ void Application::AudioLoop() {
         if (codec->output_enabled()) {
             OnAudioOutput();
         }
+        // 减少循环延迟，提高响应性
+        vTaskDelay(pdMS_TO_TICKS(5));  // 5ms延迟而不是默认的更长延迟
     }
 }
 
 void Application::OnAudioOutput() {
-    if (busy_decoding_audio_) {
-        return;
-    }
-
     auto now = std::chrono::steady_clock::now();
     auto codec = Board::GetInstance().GetAudioCodec();
     const int max_silence_seconds = 10;
 
+    // 首先尝试从PCM缓冲队列播放
+    {
+        std::lock_guard<std::mutex> pcm_lock(pcm_buffer_mutex_);
+        if (!pcm_buffer_queue_.empty()) {
+            auto pcm_data = std::move(pcm_buffer_queue_.front());
+            pcm_buffer_queue_.pop_front();
+            codec->OutputData(pcm_data);
+            last_output_time_ = now;
+            return;
+        }
+    }
+
+    // 如果PCM队列为空且正在解码，等待解码完成
+    if (busy_decoding_audio_) {
+        return;
+    }
+
+    // 检查是否需要解码新的音频包
     std::unique_lock<std::mutex> lock(mutex_);
     if (audio_decode_queue_.empty()) {
         // Disable the output if there is no audio data for a long time
@@ -846,12 +869,22 @@ void Application::OnAudioOutput() {
             output_resampler_.Process(pcm.data(), pcm.size(), resampled.data());
             pcm = std::move(resampled);
         }
-        codec->OutputData(pcm);
+
+        // 将PCM数据放入缓冲队列而不是直接播放
+        {
+            std::lock_guard<std::mutex> pcm_lock(pcm_buffer_mutex_);
+            if (pcm_buffer_queue_.size() >= MAX_PCM_BUFFER_SIZE) {
+                // 如果缓冲队列满了，丢弃最旧的数据
+                pcm_buffer_queue_.pop_front();
+                ESP_LOGW(TAG, "PCM buffer overflow, dropping oldest frame");
+            }
+            pcm_buffer_queue_.emplace_back(std::move(pcm));
+        }
+
 #ifdef CONFIG_USE_SERVER_AEC
         std::lock_guard<std::mutex> lock(timestamp_mutex_);
         timestamp_queue_.push_back(packet.timestamp);
 #endif
-        last_output_time_ = std::chrono::steady_clock::now();
     })) {
         busy_decoding_audio_ = false;
     }

@@ -116,6 +116,11 @@ private:
     std::condition_variable audio_decode_cv_;
     std::list<AudioStreamPacket> audio_testing_queue_;
 
+    // PCM缓冲队列，用于平滑播放
+    std::list<std::vector<int16_t>> pcm_buffer_queue_;
+    std::mutex pcm_buffer_mutex_;
+    static constexpr size_t MAX_PCM_BUFFER_SIZE = 8; // 最多缓冲8帧PCM数据
+
     // 新增：用于维护音频包的timestamp队列
     std::list<uint32_t> timestamp_queue_;
     std::mutex timestamp_mutex_;
