@@ -344,6 +344,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307
         bool "征辰科技1.54(ML307)"
         depends on IDF_TARGET_ESP32S3
+    config BOARD_TYPE_ZHENGCHEN_1_29TFT_WIFI
+        bool "征辰科技1.29(WIFI-GC9A01)"
+        depends on IDF_TARGET_ESP32S3
 
 choice ZHENGCHEN_DISPLAY_TYPE
     depends on BOARD_TYPE_ZHENGCHEN_1_54TFT_WIFI || BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307
@@ -362,6 +365,10 @@ choice ZHENGCHEN_DISPLAY_TYPE
         help
             使用GC9A01驱动的1.28寸圆形TFT LCD显示器
 endchoice
+
+# 为1.29寸屏幕自动设置GC9A01驱动
+config ZHENGCHEN_DISPLAY_GC9A01
+    default y if BOARD_TYPE_ZHENGCHEN_1_29TFT_WIFI
 
     config BOARD_TYPE_MINSI_K08_DUAL
         bool "敏思科技K08(DUAL)"

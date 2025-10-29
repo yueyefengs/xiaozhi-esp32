@@ -1,11 +1,6 @@
 #include "wifi_board.h"
 #include "codecs/no_audio_codec.h"
-#ifdef CONFIG_ZHENGCHEN_DISPLAY_GC9A01
-#include "zhengchen_gc9a01_display.h"
-#include <esp_lcd_gc9a01.h>
-#else
 #include "zhengchen_lcd_display.h"
-#endif
 #include "system_reset.h"
 #include "application.h"
 #include "button.h"
@@ -29,11 +24,7 @@ private:
     Button boot_button_;
     Button volume_up_button_;
     Button volume_down_button_;
-#ifdef CONFIG_ZHENGCHEN_DISPLAY_GC9A01
-    ZHENGCHEN_Gc9a01Display* display_;
-#else
     ZHENGCHEN_LcdDisplay* display_;
-#endif
     PowerSaveTimer* power_save_timer_;
     PowerManager* power_manager_;
     esp_lcd_panel_io_handle_t panel_io_ = nullptr;
@@ -145,39 +136,8 @@ private:
         });
     }
 
-    void InitializeDisplay() {
-#ifdef CONFIG_ZHENGCHEN_DISPLAY_GC9A01
-        // GC9A01 显示器初始化
-        ESP_LOGD(TAG, "Install GC9A01 panel IO");
-        esp_lcd_panel_io_spi_config_t io_config = {};
-        io_config.cs_gpio_num = DISPLAY_CS;
-        io_config.dc_gpio_num = DISPLAY_DC;
-        io_config.spi_mode = 0;
-        io_config.pclk_hz = 40 * 1000 * 1000;
-        io_config.trans_queue_depth = 10;
-        io_config.lcd_cmd_bits = 8;
-        io_config.lcd_param_bits = 8;
-        ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io_));
-
-        ESP_LOGD(TAG, "Install GC9A01 LCD driver");
-        esp_lcd_panel_dev_config_t panel_config = {};
-        panel_config.reset_gpio_num = DISPLAY_RES;
-        panel_config.rgb_endian = LCD_RGB_ENDIAN_BGR;
-        panel_config.bits_per_pixel = 16;
-        ESP_ERROR_CHECK(esp_lcd_new_panel_gc9a01(panel_io_, &panel_config, &panel_));
-        ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_));
-        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_));
-        ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_, true));
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y));
-        ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_, true));
-
-        display_ = new ZHENGCHEN_Gc9a01Display(panel_io_, panel_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, 
-            DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
-        display_->SetupHighTempWarningPopup();
-        display_->SetupCircularMask();  // 设置圆形遮罩
-#else
-        // ST7789 显示器初始化 (默认)
-        ESP_LOGD(TAG, "Install ST7789 panel IO");
+    void InitializeSt7789Display() {
+        ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS;
         io_config.dc_gpio_num = DISPLAY_DC;
@@ -188,7 +148,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io_));
 
-        ESP_LOGD(TAG, "Install ST7789 LCD driver");
+        ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_RES;
         panel_config.rgb_ele_order = LCD_RGB_ELEMENT_ORDER_RGB;
@@ -203,7 +163,6 @@ private:
         display_ = new ZHENGCHEN_LcdDisplay(panel_io_, panel_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, 
             DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
         display_->SetupHighTempWarningPopup();
-#endif
     }
 
     void InitializeTools() {
@@ -218,7 +177,7 @@ public:
         InitializePowerSaveTimer();
         InitializeSpi();
         InitializeButtons();
-        InitializeDisplay();  
+        InitializeSt7789Display();  
         InitializeTools();
         GetBacklight()->RestoreBrightness();
     }
