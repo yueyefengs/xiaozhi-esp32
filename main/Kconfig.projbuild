@@ -344,6 +344,25 @@ choice BOARD_TYPE
     config BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307
         bool "征辰科技1.54(ML307)"
         depends on IDF_TARGET_ESP32S3
+
+choice ZHENGCHEN_DISPLAY_TYPE
+    depends on BOARD_TYPE_ZHENGCHEN_1_54TFT_WIFI || BOARD_TYPE_ZHENGCHEN_1_54TFT_ML307
+    prompt "征辰科技显示器类型"
+    default ZHENGCHEN_DISPLAY_ST7789
+    help
+        选择征辰科技开发板使用的显示器类型
+
+    config ZHENGCHEN_DISPLAY_ST7789
+        bool "ST7789 1.54寸 TFT LCD (默认)"
+        help
+            使用ST7789驱动的1.54寸TFT LCD显示器
+
+    config ZHENGCHEN_DISPLAY_GC9A01
+        bool "GC9A01 1.28寸 圆形 TFT LCD"
+        help
+            使用GC9A01驱动的1.28寸圆形TFT LCD显示器
+endchoice
+
     config BOARD_TYPE_MINSI_K08_DUAL
         bool "敏思科技K08(DUAL)"
         depends on IDF_TARGET_ESP32S3

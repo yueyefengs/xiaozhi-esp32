@@ -1,0 +1,250 @@
+               WriteCom(0xFE);			 
+	WriteCom(0xEF); 
+
+	WriteCom(0xEB);	
+	WriteData(0x14); 
+
+	WriteCom(0x84);			
+	WriteData(0x40); 
+
+	WriteCom(0x85);			
+	WriteData(0xF1); 
+
+	WriteCom(0x86);			
+	WriteData(0x98); 
+
+	WriteCom(0x87);			
+	WriteData(0x28);
+
+	WriteCom(0x88);			
+	WriteData(0x0A);
+
+	WriteCom(0x89);			
+	WriteData(0x21); 
+
+	WriteCom(0x8A);			
+	WriteData(0x00); 
+
+	WriteCom(0x8B);			
+	WriteData(0x80); 
+
+	WriteCom(0x8C);			
+	WriteData(0x01); 
+
+	WriteCom(0x8D);			
+	WriteData(0x00); 
+
+	WriteCom(0x8E);			
+	WriteData(0xDF); 
+
+	WriteCom(0x8F);			
+	WriteData(0x52); 
+
+
+
+
+	WriteCom(0xB6);			
+	WriteData(0x20); 
+
+	WriteCom(0x36);			
+	WriteData(0x48);
+
+	WriteCom(0x3A);			
+	WriteData(0x05);///0x06 
+
+
+	WriteCom(0x90);			
+	WriteData(0x08);
+	WriteData(0x08);
+	WriteData(0x08);
+	WriteData(0x08); 
+
+	WriteCom(0xBD);			
+	WriteData(0x06);
+
+	WriteCom(0xBF);			
+	WriteData(0x1C);
+
+	WriteCom(0xA7);			
+	WriteData(0x45);			
+
+	WriteCom(0xA9);			
+	WriteData(0xBB);	
+
+	WriteCom(0xB8);			
+	WriteData(0x63);	
+
+
+	WriteCom(0xBC);			
+	WriteData(0x00);	
+
+	WriteCom(0xFF);			
+	WriteData(0x60);
+	WriteData(0x01);
+	WriteData(0x04);
+
+	WriteCom(0xC3);			
+	WriteData(0x17); 
+	WriteCom(0xC4);			
+	WriteData(0x17); 
+
+	WriteCom(0xC9);			
+	WriteData(0x25);
+
+	WriteCom(0xBE);			
+	WriteData(0x11); 
+
+	WriteCom(0xE1);			
+	WriteData(0x10);
+	WriteData(0x0E);
+
+	WriteCom(0xDF);			
+	WriteData(0x21);
+	WriteData(0x10);
+	WriteData(0x02);
+
+	WriteCom(0xF0);			
+	WriteData(0x45);
+	WriteData(0x09);
+	WriteData(0x08);
+	WriteData(0x08);
+	WriteData(0x26); 
+	WriteData(0x2A);
+
+	WriteCom(0xF1);			
+	WriteData(0x43);
+	WriteData(0x70);
+	WriteData(0x72);
+	WriteData(0x36);
+	WriteData(0x37); 
+	WriteData(0x6F);
+
+	WriteCom(0xF2);			
+	WriteData(0x45);
+	WriteData(0x09);
+	WriteData(0x08);
+	WriteData(0x08);
+	WriteData(0x26); 
+	WriteData(0x2A);
+
+	WriteCom(0xF3);			
+	WriteData(0x43);
+	WriteData(0x70);
+	WriteData(0x72);
+	WriteData(0x36);
+	WriteData(0x37); 
+	WriteData(0x6F);
+
+	WriteCom(0xED);	
+	WriteData(0x1B); 
+	WriteData(0x0B); 
+
+	WriteCom(0xAC);			
+	WriteData(0x47);
+	WriteCom(0xAE);			
+	WriteData(0x77);
+	WriteCom(0xCB);			
+	WriteData(0x02);			
+	WriteCom(0xCD);			
+	WriteData(0x63);		
+
+
+	WriteCom(0x70);			
+	WriteData(0x07);
+	WriteData(0x09);
+	WriteData(0x04);
+	WriteData(0x0E); 
+	WriteData(0x0F); 
+	WriteData(0x09);
+	WriteData(0x07);
+	WriteData(0x08);
+	WriteData(0x03);
+
+	WriteCom(0xE8);			
+	WriteData(0x34);
+
+	WriteCom(0x62);			
+	WriteData(0x18);
+	WriteData(0x0D);
+	WriteData(0x71);
+	WriteData(0xED);
+	WriteData(0x70); 
+	WriteData(0x70);
+	WriteData(0x18);
+	WriteData(0x0F);
+	WriteData(0x71);
+	WriteData(0xEF);
+	WriteData(0x70); 
+	WriteData(0x70);
+
+	WriteCom(0x63);			
+	WriteData(0x18);
+	WriteData(0x11);
+	WriteData(0x71);
+	WriteData(0xF1);
+	WriteData(0x70); 
+	WriteData(0x70);
+	WriteData(0x18);
+	WriteData(0x13);
+	WriteData(0x71);
+	WriteData(0xF3);
+	WriteData(0x70); 
+	WriteData(0x70);
+
+	WriteCom(0x64);			
+	WriteData(0x28);
+	WriteData(0x29);
+	WriteData(0xF1);
+	WriteData(0x01);
+	WriteData(0xF1);
+	WriteData(0x00);
+	WriteData(0x07);
+
+	WriteCom(0x66);			
+	WriteData(0x3C);
+	WriteData(0x00);
+	WriteData(0xCD);
+	WriteData(0x67);
+	WriteData(0x45);
+	WriteData(0x45);
+	WriteData(0x10);
+	WriteData(0x00);
+	WriteData(0x00);
+	WriteData(0x00);
+
+	WriteCom(0x67);			
+	WriteData(0x00);
+	WriteData(0x3C);
+	WriteData(0x00);
+	WriteData(0x00);
+	WriteData(0x00);
+	WriteData(0x01);
+	WriteData(0x54);
+	WriteData(0x10);
+	WriteData(0x32);
+	WriteData(0x98);
+
+	WriteCom(0x74);			
+	WriteData(0x10);	
+	WriteData(0x85);	
+	WriteData(0x80);
+	WriteData(0x00); 
+	WriteData(0x00); 
+	WriteData(0x4E);
+	WriteData(0x00);					
+	
+	WriteCom(0x35);	
+	WriteCom(0x21);
+	delayms(120);
+	//--------end gamma setting--------------//
+	WriteCom(0x11);
+	delayms(120);
+
+
+	
+	
+	WriteCom(0x29);
+	WriteCom(0x2c);
+
+}
+
